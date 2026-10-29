@@ -1,0 +1,71 @@
+// ignore: file_names
+import 'dart:convert';
+import 'package:attendantwebapp/features/Auth/data/models/login_user_model.dart';
+import 'package:attendantwebapp/main.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class AuthController {
+  static const String _accessTokenKey = 'jwtToken';
+  static const String _userModelKey = 'user-data';
+
+  static String? accessToken;
+  static UserModel? userModel;
+
+  static DateTime? lastApiCallTime;
+
+  static Future<void> saveUserData(UserModel model, String token) async {
+    SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+    await sharedPreferences.setString(_accessTokenKey, token);
+
+    await sharedPreferences.setString(
+      _userModelKey,
+      jsonEncode(model.toJson()),
+    );
+    accessToken = token;
+    userModel = model;
+  }
+
+  static Future<void> updateUserData(UserModel model) async {
+    SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+    await sharedPreferences.setString(
+      _userModelKey,
+      jsonEncode(model.toJson()),
+    );
+    userModel = model;
+  }
+
+  static Future<void> getUserData() async {
+    SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+    String? token = sharedPreferences.getString(_accessTokenKey);
+    if (token != null) {
+      String? userData = sharedPreferences.getString(_userModelKey);
+      userModel = UserModel.fromJson(jsonDecode(userData!));
+      accessToken = token;
+    }
+  }
+
+  static Future<bool> isUserAlreadyLoggedIn() async {
+    SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+    String? token = sharedPreferences.getString(_accessTokenKey);
+
+    return token != null;
+  }
+
+  // un used/////////////////////////////////////////////////////////////////////////
+
+  // AuthController class-এর ভেতরে
+  static Future<void> goToLogin() async {
+    await clearUserData(); // ডেটা ক্লিয়ার করা
+    // সরাসরি লগইন পেজে পাঠিয়ে দেওয়া এবং আগের সব রুট ডিলিট করা
+    navigatorKey.currentState?.pushNamedAndRemoveUntil(
+      '/login',
+      (route) => false,
+    );
+  }
+  //.................................................................................................
+
+  static Future<void> clearUserData() async {
+    SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+    await sharedPreferences.clear();
+  }
+}
